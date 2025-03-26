@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Color Memory Challenge</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f4f8;
+            margin: 0;
+            text-align: center;
+        }
+        .game-container {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            padding: 30px;
+            width: 80%;
+            max-width: 600px;
+        }
+        #color-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .color-box {
+            height: 100px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border-radius: 10px;
+        }
+        .color-box:hover {
+            transform: scale(1.05);
+        }
+        #score, #timer {
+            font-size: 24px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        #game-status {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🌈 Color Memory Challenge 🧠</h1>
+        <div id="score">Score: 0</div>
+        <div id="timer">Time: 30s</div>
+        <div id="color-grid"></div>
+        <div id="game-status">Remember the colors!</div>
+    </div>
+
+    <script>
+        // Game configuration
+        const GRID_SIZE = 4 * 4;
+        const SHOW_DURATION = 3000; // 3 seconds to memorize
+        const GAME_DURATION = 30000; // 30 seconds total game time
+
+        class ColorMemoryGame {
+            constructor() {
+                this.colorGrid = document.getElementById('color-grid');
+                this.scoreDisplay = document.getElementById('score');
+                this.timerDisplay = document.getElementById('timer');
+                this.statusDisplay = document.getElementById('game-status');
+                
+                this.colors = [];
+                this.selectedColors = [];
+                this.score = 0;
+                this.timeLeft = 30;
+                this.timer = null;
+            }
+
+            // Generate random vibrant colors
+            generateColors() {
+                const baseColors = [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', 
+                    '#FDCB6E', '#6C5CE7', '#FF8A5B', 
+                    '#2ECC71', '#9B59B6', '#3498DB'
+                ];
+
+                // Duplicate colors to create pairs
+                this.colors = baseColors
+                    .sort(() => 0.5 - Math.random())
+                    .slice(0, GRID_SIZE / 2)
+                    .flatMap(color => [color, color])
+                    .sort(() => 0.5 - Math.random());
+            }
+
+            // Create color grid
+            renderGrid() {
+                this.colorGrid.innerHTML = '';
+                this.colors.forEach((color, index) => {
+                    const colorBox = document.createElement('div');
+                    colorBox.classList.add('color-box');
+                    colorBox.style.backgroundColor = color;
+                    colorBox.dataset.color = color;
+                    colorBox.addEventListener('click', () => this.handleColorClick(colorBox));
+                    this.colorGrid.appendChild(colorBox);
+                });
+            }
+
+            // Initial game setup
+            setupGame() {
+                this.generateColors();
+                this.renderGrid();
+                this.hideColors();
+                this.startTimer();
+            }
+
+            // Hide colors after brief show
+            hideColors() {
+                const colorBoxes = document.querySelectorAll('.color-box');
+                colorBoxes.forEach(box => {
+                    box.style.backgroundColor = '#CCCCCC';
+                });
+
+                setTimeout(() => {
+                    this.statusDisplay.textContent = 'Find the matching colors!';
+                }, SHOW_DURATION);
+            }
+
+            // Handle color box click
+            handleColorClick(colorBox) {
+                if (this.selectedColors.length >= 2 || 
+                    colorBox.classList.contains('matched') || 
+                    this.timeLeft <= 0) return;
+
+                colorBox.style.backgroundColor = colorBox.dataset.color;
+                this.selectedColors.push(colorBox);
+
+                if (this.selectedColors.length === 2) {
+                    this.checkMatch();
+                }
+            }
+
+            // Check if selected colors match
+            checkMatch() {
+                const [first, second] = this.selectedColors;
+                
+                if (first.dataset.color === second.dataset.color) {
+                    first.classList.add('matched');
+                    second.classList.add('matched');
+                    this.score += 10;
+                    this.scoreDisplay.textContent = `Score: ${this.score}`;
+                } else {
+                    setTimeout(() => {
+                        first.style.backgroundColor = '#CCCCCC';
+                        second.style.backgroundColor = '#CCCCCC';
+                    }, 500);
+                }
+
+                this.selectedColors = [];
+            }
+
+            // Start game timer
+            startTimer() {
+                this.timer = setInterval(() => {
+                    this.timeLeft--;
+                    this.timerDisplay.textContent = `Time: ${this.timeLeft}s`;
+
+                    if (this.timeLeft <= 0) {
+                        this.endGame();
+                    }
+                }, 1000);
+            }
+
+            // End game logic
+            endGame() {
+                clearInterval(this.timer);
+                this.statusDisplay.textContent = `Game Over! Final Score: ${this.score}`;
+                const colorBoxes = document.querySelectorAll('.color-box');
+                colorBoxes.forEach(box => {
+                    box.style.backgroundColor = box.dataset.color;
+                    box.style.cursor = 'default';
+                });
+            }
+        }
+
+        // Initialize and start the game
+        const game = new ColorMemoryGame();
+        game.setupGame();
+    </script>
+</body>
+</html>
